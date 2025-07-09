@@ -137,20 +137,40 @@ action_history = []
 confidence_history = []
 
 print("\n=== Agent Trading Simulation ===")
+action_counts = {0: 0, 1: 0, 2: 0}  # Count each action type
+
 while not done:
-    # Get action probabilities (logits to softmax)
+    # Use the model's built-in predict method
+    action, _states = model.predict(obs, deterministic=True)
+    
+    # Count the actions
+    action_counts[action] += 1
+    
+    # Get confidence for display
     obs_tensor = torch.from_numpy(obs.astype(np.float32)).unsqueeze(0)
-    logits = model.policy.forward(obs_tensor)[0].float()
-    probs = torch.nn.functional.softmax(logits, dim=-1).detach().numpy().flatten()
-    action = np.argmax(probs)
-    confidence = probs[action]
+    with torch.no_grad():
+        logits = model.policy.get_distribution(obs_tensor).distribution.logits
+        probs = torch.nn.functional.softmax(logits, dim=-1).detach().numpy().flatten()
+        confidence = probs[action]
+    
     action_history.append(action)
     confidence_history.append(confidence)
     obs, reward, done, truncated, _ = env.step(action)
     total_reward += reward
     step_rewards.append(reward)
-    print(f"Step {env.current_step:4d} | 🧠 Action: {actions[action]:4s} | Confidence: {confidence:.2%} | Reward: {reward:.2f} | Balance: ${env.balance:.2f}")
+    
+    # Print every 50 steps to see what's happening
+    if env.current_step % 50 == 0:
+        print(f"Step {env.current_step:4d} | 🧠 Action: {actions[action]:4s} | Confidence: {confidence:.2%} | Reward: {reward:.2f} | Balance: ${env.balance:.2f}")
+    
+    if env.position == 0 and len(env.trade_log) > 0:  # Just closed a trade
+        print(f"💰 Balance after trade: ${env.balance:.2f}")
 
+# Print action summary
+print(f"\n=== Action Summary ===")
+print(f"HOLD actions: {action_counts[0]} ({action_counts[0]/sum(action_counts.values())*100:.1f}%)")
+print(f"BUY actions: {action_counts[1]} ({action_counts[1]/sum(action_counts.values())*100:.1f}%)")
+print(f"SELL actions: {action_counts[2]} ({action_counts[2]/sum(action_counts.values())*100:.1f}%)")
 print("\n=== Trading Results ===")
 print(f"Final balance: ${env.balance:.2f}")
 print(f"Total reward: {total_reward:.2f}")

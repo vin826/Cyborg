@@ -19,7 +19,7 @@ class TradingEnv(gym.Env):
         self.trade_log = []
         self.pnl_log = []
         self.fixed_risk_dollars = 10.0
-        self.virtual_stop_pct = 0.01
+        self.virtual_stop_pct = 0.02
         self.leverage = 5
 
         # For tracking drawdown
@@ -205,4 +205,7 @@ class TradingEnv(gym.Env):
         self.balance = self.initial_balance
         self.position = 0
         self.entry_price = 0
+        self.trade_log = []  # Clear previous trades
+        self.pnl_log = []    # Clear previous P&L
+        print(f"🔄 Environment reset. Starting balance: ${self.balance:.2f}")  # Debug line
         return self._get_observation(), {}  # Return observation and an empty info dict
