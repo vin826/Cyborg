@@ -142,6 +142,7 @@ action_counts = {0: 0, 1: 0, 2: 0}  # Count each action type
 while not done:
     # Use the model's built-in predict method
     action, _states = model.predict(obs, deterministic=True)
+    action = int(action)  # Convert numpy array to regular integer
     
     # Count the actions
     action_counts[action] += 1
